@@ -1,3 +1,4 @@
 .*.swp
 chffr_token
 explorer/token.js
+.DS_Store

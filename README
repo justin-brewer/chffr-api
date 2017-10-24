@@ -1,5 +1,7 @@
 The public chffr API. Get access to your data. Do cool things with it!
 
+*See branch 'features' for my contributions to this project
+
 == Install requirements with ==
 # pip install -r requirements.txt
 

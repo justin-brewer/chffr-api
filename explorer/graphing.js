@@ -16,6 +16,10 @@ var flightPaths = {};
 var selectedRoute = null;
 var ignoreHashChange = false;
 
+var currentIndex = 0;
+var playbackSpeed = 1;
+var play = false;
+
 function unselectRoute() {
   if (selectedRoute != null) {
     flightPaths[selectedRoute].setOptions({"strokeOpacity": 0.3, 'zIndex': routeNumbersAll[selectedRoute]});
@@ -33,7 +37,11 @@ function closeViewerPanel() {
 
 // Update main div with picture, coordinates, mph, offset and such
 function update(coords, routeName, clickedIndex) {
-  p('update')
+  if (!play){
+    p('update');  
+  }
+  var playbackSpeedDisplay = document.getElementById("playbackSpeed");
+  playbackSpeedDisplay.innerHTML = ("playback speed: " + playbackSpeed);
 
   if (location.hash.substring(1) != routeName) {
     ignoreHashChange = true;
@@ -47,17 +55,16 @@ function update(coords, routeName, clickedIndex) {
   selectedRoute = routeName;
   flightPaths[selectedRoute].setOptions({"strokeOpacity": 1.0, 'zIndex': 9999});
 
-
   var marker = coords[clickedIndex];
   if(marker === undefined) { return; }
   var totalDrive = coords[coords.length-1]['dist'];
 
   gmarker.setPosition({"lat": marker['lat'], "lng": marker['lng']});
- 
-  var MS_TO_MPH = 2.23694;    
-  var route = document.getElementById("date");   
+
+  var MS_TO_MPH = 2.23694;
+  var route = document.getElementById("date");
   var mph = document.getElementById("speed");
-  var distance = document.getElementById("distance"); 
+  var distance = document.getElementById("distance");
   var video_pic = document.getElementById("video_pic");
 
   var routeTime = parseRouteDate(routeName);
@@ -73,12 +80,10 @@ function update(coords, routeName, clickedIndex) {
   distance.innerHTML = (marker['dist']).toFixed(2) + "/" + totalDrive.toFixed(2) + "mi";
 
   function get_picture() {
-    p("called");
+    if (!play) { p("called"); }
     timeout = null;
-
     frames_url = routeInfo[routeName]['url'];
-    video_URL = frames_url+"/sec"+Math.floor(marker['index'] / 100 + 1)+".jpg"
-
+    video_URL = frames_url+"/sec"+clickedIndex+".jpg"
     video_pic.src = video_URL
     video_pic.onerror = function() {
       video_pic.src = "comma_default.png";
@@ -102,6 +107,7 @@ function initTimeline(coords, routeName, clickedIndex) {
 
   var updateSliderValue = function (event, ui) {
     handle = handle || $(".ui-slider-handle", timelineSlider);
+    if(ui.value != undefined){currentIndex = ui.value;}
     update(coords, routeName, ui.value);
   };
 
@@ -119,8 +125,8 @@ function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
     zoom: 11,
     center: {
-      lat: 37.7625,
-      lng: -122.4031
+    lat: 37.7625,
+    lng: -122.4031
     },
     keyboardShortcuts: false
   });
@@ -159,8 +165,8 @@ function selectRoute(routeName) {
   location.hash = routeName;
   var coords = coordsAll[routeName];
   if (coords == null) { return; }
-  var marker = coords.length>>1;
-  update(coords, routeName, marker);
+  var marker = currentIndex; //coords.length>>1;
+  update(coords, routeName, currentIndex);
   initTimeline(coords, routeName, marker);
   map.panTo(new google.maps.LatLng(coords[marker]['lat'], coords[marker]['lng']));
 }
@@ -169,7 +175,7 @@ function selectRoute(routeName) {
 function drawLine(map) {
   p(token);
 
-  // Handle route coordinate and index data, set the 
+  // Handle route coordinate and index data, set the
   // flightPath line and styles, 1st time & on click
   function handleRoute(json, routeName, routeNumber) {
     var coords = json;
@@ -283,14 +289,100 @@ function getDongleId() {
 }
 
 $(window).keypress(function(e) {
-  //p(e.keyCode);
-  if (e.keyCode == 102) {
+  p(e.keyCode);
+  var keyHelp = "<b>Flip</b> = 'f' | <b>Play/Pause</b> = 'v' | ";
+  keyHelp += "<b>Close</b> = 'c' | <b>Next</b> = 'n' | <b>prev</b> = 'p'<br>";
+  keyHelp += "<b>Faster</b> = 'u' | <b>Slower</b> = 's' | <b>Download Drive</b> = 'd'";
+  var coords = coordsAll[selectedRoute];
+  if (e.keyCode == 102) { // f : flip frame 180 degrees
     //p("hit f");
     if ($('#video_pic').css("transform") !== "none") {
       $('#video_pic').css("transform", "none");
     } else {
       $('#video_pic').css("transform", "scale(-1)");
     }
+  } else if (e.keyCode == 118) { // v : play/pause
+     if (selectedRoute != null) {
+      playVid();
+    }
+  } else if (e.keyCode == 99) { // c : same as close button
+      if (selectedRoute != null) {
+        var playbackSpeedDisplay = document.getElementById("playbackSpeed");
+        playbackSpeedDisplay.innerHTML = "";
+        currentIndex = 0;
+        play = false;
+        location.hash = '';
+      }
+  } else if (e.keyCode == 110) { // n : next frame
+    if (currentIndex < coords[coords.length-1]['index']/100.0 && selectedRoute != null){
+      update(coords, selectedRoute, ++currentIndex);
+      initTimeline(coords, selectedRoute, currentIndex);
+    }
+  } else if (e.keyCode == 112) { // p : previous frame
+    if (currentIndex > 0 && selectedRoute != null) {
+      update(coords, selectedRoute, --currentIndex);
+      initTimeline(coords, selectedRoute, currentIndex);
+    }
+  } else if (e.keyCode == 117) { // u : increase playbackSpeed
+    if (playbackSpeed < 10 && selectedRoute != null) {
+      playbackSpeed += 1;  
+      // var playbackSpeedDisplay = document.getElementById("playbackSpeed");
+      document.getElementById("playbackSpeed").innerHTML = ("playback speed: " + playbackSpeed);
+    }
+  } else if (e.keyCode == 115) { // s : decrease playbackSpeed
+    if (playbackSpeed > 1 && selectedRoute != null) {
+      playbackSpeed -= 1;
+      // var playbackSpeedDisplay = document.getElementById("playbackSpeed");
+      document.getElementById("playbackSpeed").innerHTML = ("playback speed: " + playbackSpeed);
+    }
+  } else if (e.keyCode == 104) { // h : toggle key shorcut help
+    var item = document.getElementById("keyHelp");
+    if (item.innerHTML == "") {
+      item.innerHTML = keyHelp;
+    } else{
+      item.innerHTML = "";
+    }
+  } else if (e.keyCode == 100) { // d : download route data
+    if (selectedRoute != null) {downloadCoords();}
   }
 });
 
+
+function downloadCoords(){
+  p('download');
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(coordsAll[selectedRoute]));
+  var dlAnchorElem = document.getElementById('downloadAnchorElem');
+  dlAnchorElem.setAttribute("href",     dataStr     );
+  var fileName = selectedRoute + ".json";
+  dlAnchorElem.setAttribute("download", fileName);
+  dlAnchorElem.click();
+}
+
+async function playVid(){
+  var playButton = document.getElementById('playButton');
+  if(!play){
+    var coords = coordsAll[selectedRoute];
+    var totalIndex = coords[coords.length-1]['index']/100.0;
+    play = true;
+    
+    // playButton.innerHTML = 'pause';
+    while(play && currentIndex < totalIndex){
+      update(coords, selectedRoute, currentIndex);
+      initTimeline(coords, selectedRoute, currentIndex);
+      var slider = document.getElementById('timelineSlider');
+      slider.value++;
+      await sleep(1000/playbackSpeed);
+      currentIndex++;  
+    }
+  }
+  else{
+    play = false;
+    // playButton.innerHTML = 'play';
+    currentIndex--;
+  }
+}
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

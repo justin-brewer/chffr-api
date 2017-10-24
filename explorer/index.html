@@ -6,6 +6,7 @@
 <!-- INCLUDE overall_header.html -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
+<script src="dist/jszip.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
 <script src="token.js"></script>
 <script src="graphing.js"></script>
@@ -13,6 +14,8 @@
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+
 <h2 id="title">driving explorer</h2>
 <br><br>
 <hr id="sep">
@@ -27,7 +30,16 @@
             <div class="col-md-6" id="routePanel">
             </div>
             <div class="col-md-6" id="viewerPanel" style="display:none">
-               <div id="viewerPanelButtonHolder"><button id="viewerPanelX" onclick="location.hash=''">close</button></div>
+               
+               <!-- <div id="downloadCoords"></div> -->
+
+               <div id="viewerPanelButtonHolder">
+                  <!-- <button id="downloadCoordsButton" onclick="downloadCoords()">download</button> -->
+                  
+                  <!-- <button id="playButton" onclick="playVid()">play</button> -->
+                  <a id="downloadAnchorElem" style="display:none"></a>
+                  <button id="viewerPanelX" onclick="location.hash=''">close</button>
+               </div>
                <img id ="video_pic" src="comma_default.png">
                <div id="route_details" class="row">
                   <div class="col-sm-4">
@@ -65,9 +77,16 @@
    </div>
    <span class="corners-bottom"><span></span></span>
 </div>
+<div id="playbackSpeed" float="center" style="font-size:26px; font-weight:bold"></div>
+<div id="help" float="center" align="left" style="font-size:26px"><br><b>Press 'h' to toggle help</b></div>
+<div id="keyHelp" float="center" align="left" style="font-size:26px"></div>
 </div>
+
+
+
+<!--<div style="height:120px;width:120px;border:1px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;" id='speed_list'>speed list</div> -->
+
 <script>
 g_dongle_id = "{DONGLE_ID}";
 </script>
 <!-- INCLUDE overall_footer.html
-
